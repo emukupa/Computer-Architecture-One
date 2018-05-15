@@ -3,6 +3,12 @@
  */
 
 /**
+ * Constants
+ */
+const LDI = 0b10011001;
+const PRN = 0b01000011;
+const HLT = 0b00000001;
+/**
  * Class for simulating a simple Computer (CPU & memory)
  */
 class CPU {
@@ -72,17 +78,39 @@ class CPU {
     const IR = this.ram.read(this.PC);
 
     // Debugging output
-    console.log(`${this.PC}: ${IR.toString(2)}`);
+    //console.log(`${this.PC}: ${IR.toString(2)}`);
 
     // Get the two bytes in memory _after_ the PC in case the instruction
     // needs them.
 
     // !!! IMPLEMENT ME
+    const operandA = this.ram.read(this.PC + 1);
+    const operandB = this.ram.read(this.PC + 2);
 
     // Execute the instruction. Perform the actions for the instruction as
     // outlined in the LS-8 spec.
 
     // !!! IMPLEMENT ME
+    switch (IR) {
+      case LDI:
+        this.reg[operandA] = operandB;
+        //this.PC += 3; // moves the point to the next instructions. commented out, using bitwise
+        break;
+      case PRN:
+        //this.PC += 2; // moves the point to the next instructions. commented out, using bitwise
+        console.log(`Execution result is ${this.reg[operandA]}`);
+        break;
+      case HLT:
+        //this.PC = 0; // moves the point to the begining. commented out, using bitwise
+        console.log(`execution done!`);
+        this.stopClock();
+        break;
+      default:
+        console.log(
+          `Instructions Registration error at: ${this.PC}: ${IR.toString(2)}`
+        );
+        this.stopClock();
+    }
 
     // Increment the PC register to go to the next instruction. Instructions
     // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
@@ -90,6 +118,7 @@ class CPU {
     // for any particular instruction.
 
     // !!! IMPLEMENT ME
+    this.PC += (IR >> 6) + 1;
   }
 }
 

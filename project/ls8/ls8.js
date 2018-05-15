@@ -1,39 +1,49 @@
+const fs = require('fs');
+// const path = require('path');
+
 const RAM = require('./ram');
 const CPU = require('./cpu');
 
-/**
- * Load an LS8 program into memory
- *
- * TODO: load this from a file on disk instead of having it hardcoded
- */
-function loadMemory() {
+// const filename = path.join(__dirname, './project/ls8/print8.ls8');
 
-    // Hardcoded program to print the number 8 on the console
+const argv = process.argv.slice(2);
 
-    const program = [ // print8.ls8
-        "10011001", // LDI R0,8  Store 8 into R0
-        "00000000",
-        "00001000",
-        "01000011", // PRN R0    Print the value in R0
-        "00000000",
-        "00000001"  // HLT       Halt and quit
-    ];
-
-    // Load the program into the CPU's memory a byte at a time
-    for (let i = 0; i < program.length; i++) {
-        cpu.poke(i, parseInt(program[i], 2));
-    }
+// add an error check to check the number of params
+if (argv.length !== 1) {
+  console.error('usage: [filename]');
+  process.exit(1);
 }
 
-/**
- * Main
- */
+const filename = argv[0];
 
-let ram = new RAM(256);
-let cpu = new CPU(ram);
+// read the file that was passed to our program
 
-// TODO: get name of ls8 file to load from command line
+const filedata = fs.readFileSync(filename, 'utf8');
 
-loadMemory(cpu);
+// split the file into lines
+const programLines = filedata.trim().split(/[\r\n]+/g);
 
+const loadMemory = (cpu, programCode) => {
+  // only read the binary part
+  const program = programCode
+    .map(line => parseInt(line, 2).toString(2))
+    .filter(num => !isNaN(num))
+    .map(byte => {
+      const len = byte.length;
+
+      if (len < 8) {
+        for (let i = 0; i < 8 - len; i++) {
+          byte = '0' + byte;
+        }
+      }
+      return byte;
+    });
+
+  program.forEach((code, i) => cpu.poke(i, parseInt(code, 2)));
+};
+
+const ram = new RAM(256);
+const cpu = new CPU(ram);
+
+loadMemory(cpu, programLines);
 cpu.startClock();
