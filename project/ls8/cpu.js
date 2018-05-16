@@ -136,17 +136,17 @@ class CPU {
     const operandB = this.ram.read(this.PC + 2);
 
     // Debugging output
-    //console.log(`${this.PC}: ${IR.toString(2)}`);
-    //console.log(`opA: ${operandA.toString(2)}`);
-    //console.log(`opB: ${operandB.toString(2)}`);
-    //console.log('at rams:', this.reg[7], this.ram[this.reg[7] + 1]);
-    // print out the stack
-    // for (let i = 0b11110011; i >= this.reg[7]; i--) {
-    //   console.log(`@ram ${i} is ${this.ram[i]}`);
-    // }
+    console.log(`${this.PC}: ${IR.toString(2)}`);
+    console.log(`opA: ${operandA.toString(2)}`);
+    console.log(`opB: ${operandB.toString(2)}`);
+    console.log('at rams:', this.reg[7], this.peek(this.reg[7]));
+    // // print out the stack
+    for (let i = 0b11110011; i >= this.reg[7]; i--) {
+      console.log(`@ram ${i} is ${this.peek(i)}`);
+    }
 
-    // console.log(`=====>: ${this.reg} <======`);
-    // console.log('=============================');
+    console.log(`=====>: ${this.reg} <======`);
+    console.log('=============================');
     // Execute the instruction. Perform the actions for the instruction as
     // outlined in the LS-8 spec.
 
@@ -226,9 +226,9 @@ class CPU {
   }
 
   /**
-   * Handles the PUSH operations
+   * push
    */
-  handle_PUSH(operandA, operandB) {
+  push(operandA, operandB) {
     // decrement
     this.reg[7]--;
 
@@ -237,31 +237,48 @@ class CPU {
   }
 
   /**
-   * Handles the POP operations
+   * Handles the PUSH operations
    */
-  handle_POP(operandA, operandB) {
+  handle_PUSH(operandA, operandB) {
+    this.push(operandA, operandB);
+  }
+
+  /**
+   * pop method
+   */
+  pop(operandA, operandB) {
     // make sure we don't pop anything above 0xf3
     if (this.reg[7] > 0xf3) {
       // don't do anything because the stack is empty
+
+      return 0;
     } else {
-      this.reg[operandA] = this.peek(this.reg[7]);
+      const result = this.peek(this.reg[7]);
       this.reg[7]++;
+      return result;
     }
+  }
+  /**
+   * Handles the POP operations
+   */
+  handle_POP(operandA, operandB) {
+    this.reg[operandA] = this.pop(operandA, operandA);
   }
 
   /**
    * Handles the RET operations
    */
   handle_RET(operandA, operandB) {
-    this.reg[this.PC] = this.handle_POP;
+    this.reg[operandA] = this.pop(operandA, operandA);
   }
 
   /**
    * Handles the CALL operations
    */
   handle_CALL(operandA, operandB) {
-    //this.reg[this.PC] =
-    console.log('HERE');
+    console.log('+++++++', this.PC, '++++++', this.reg[operandA]);
+    this.push(this.reg[operandA]);
+    this.PC = operandA + 1;
   }
 }
 
