@@ -58,6 +58,21 @@ const loadMemory = (cpu, programCode) => {
   //   '00000001', // HLT       Halt
   // ];
 
+  // const program = [
+  //   '10011001', // LDI R0, 18  Load R0 with value 18
+  //   '00000000',
+  //   '00010010',
+  //   '10011001', // # LDI R1, 9  Load R1 with value 9
+  //   '00000001',
+  //   '00001001',
+  //   '10101011', // DIV R0, R1 Addition R0 - R1, storing result in R0
+  //   '00000000',
+  //   '00000001',
+  //   '01000011', // PRN R0    Print value in R0
+  //   '00000000',
+  //   '00000001', // HLT       Halt
+  // ];
+
   const program = [
     '10011001', //# LDI R0, 1
     '00000000',

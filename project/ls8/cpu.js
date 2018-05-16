@@ -12,13 +12,15 @@ const HLT = 0b00000001; // 0 operand
 const MUL = 0b10101010; // 2 operands, ALU OP
 const POP = 0b01001100; // 1 operand
 const PUSH = 0b01001101; // 1 operand
+const ADD = 0b10101000; // 2 operands, ALU OP
+const SUB = 0b10101001; // 2 operands, ALU OP
+const DIV = 0b10101011; // 2 operands, ALU OP
+const RET = 0b00001001; // 0 operand
+const CALL = 0b01001000; // 1 operand
 
 // TBD implemented
-const ADD = 0b10101000; // 2 operands, ALU OP
-const CALL = 0b01001000; // 1 operand
 const CMP = 0b10100000; // 2 operands, ALU OP
 const DEC = 0b01111001; // 1 operand, ALU OP
-const DIV = 0b10101011; // 2 operands, ALU OP
 const INC = 0b01111000; // 1 operands, ALU OP
 const INT = 0b01001010; // 1 operand,
 const IRET = 0b00001011; // 0 operand
@@ -33,9 +35,7 @@ const NOP = 0b00000000; // 0 operands
 const NOT = 0b01110000; // 1 operand, ALU OP
 const OR = 0b10110001; // 2 operands, ALU OP
 const PRA = 0b01000010; // 1 operand
-const RET = 0b00001001; // 0 operand
 const ST = 0b10011010; // 2 operands
-const SUB = 0b10101001; // 2 operands, ALU OP
 const XOR = 0b10110010; // 2 operands, ALU OP
 
 /**
@@ -66,6 +66,11 @@ class CPU {
     this.branchTable[MUL] = this.handle_MUL;
     this.branchTable[PUSH] = this.handle_PUSH;
     this.branchTable[POP] = this.handle_POP;
+    this.branchTable[ADD] = this.handle_ADD;
+    this.branchTable[SUB] = this.handle_SUB;
+    this.branchTable[DIV] = this.handle_DIV;
+    this.branchTable[RET] = this.handle_RET;
+    this.branchTable[CALL] = this.handle_CALL;
   }
 
   /**
@@ -193,6 +198,27 @@ class CPU {
   }
 
   /**
+   * Handles the DIV operations
+   */
+  handle_DIV(operandA, operandB) {
+    this.reg[operandA] /= this.reg[operandB];
+  }
+
+  /**
+   * Handles the ADD operations
+   */
+  handle_ADD(operandA, operandB) {
+    this.reg[operandA] += this.reg[operandB];
+  }
+
+  /**
+   * Handles the SUB operations
+   */
+  handle_SUB(operandA, operandB) {
+    this.reg[operandA] -= this.reg[operandB];
+  }
+
+  /**
    * Handles the PUSH operations
    */
   handle_PUSH(operandA, operandB) {
@@ -212,6 +238,21 @@ class CPU {
     } else {
       this.reg[operandA] = this.ram[this.reg[7]];
     }
+  }
+
+  /**
+   * Handles the RET operations
+   */
+  handle_RET(operandA, operandB) {
+    this.reg[this.PC] = this.handle_POP;
+  }
+
+  /**
+   * Handles the CALL operations
+   */
+  handle_CALL(operandA, operandB) {
+    //this.reg[this.PC] =
+    console.log('HERE');
   }
 }
 
