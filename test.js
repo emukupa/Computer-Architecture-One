@@ -32,35 +32,35 @@ const loadMemory = (cpu, programCode) => {
   //   '00000001', // HLT       Halt and quit
   // ];
 
-  const program = [
-    '10011001', // LDI R0, 8  Load R0 with value 8
-    '00000000',
-    '00001000',
-    '10011001', // # LDI R1, 9  Load R1 with value 9
-    '00000001',
-    '00001001',
-    '10101010', // MUL R0, R1 Multiply R0 * R1, storing result in R0
-    '00000000',
-    '00000001',
-    '01000011', // PRN R0    Print value in R0
-    '00000000',
-    '00000001', // HLT       Halt
-  ];
+  // const program = [
+  //   '10011001', // LDI R0, 8  Load R0 with value 8
+  //   '00000000',
+  //   '00001000',
+  //   '10011001', // # LDI R1, 9  Load R1 with value 9
+  //   '00000001',
+  //   '00001001',
+  //   '10101010', // MUL R0, R1 Multiply R0 * R1, storing result in R0
+  //   '00000000',
+  //   '00000001',
+  //   '01000011', // PRN R0    Print value in R0
+  //   '00000000',
+  //   '00000001', // HLT       Halt
+  // ];
 
   // only read the binary part
-  // const program = programCode
-  //   .map(line => parseInt(line, 2).toString(2))
-  //   .filter(num => !isNaN(num))
-  //   .map(byte => {
-  //     const len = byte.length;
+  const program = programCode
+    .map(line => parseInt(line, 2).toString(2))
+    .filter(num => !isNaN(num))
+    .map(byte => {
+      const len = byte.length;
 
-  //     if (len < 8) {
-  //       for (let i = 0; i < 8 - len; i++) {
-  //         byte = '0' + byte;
-  //       }
-  //     }
-  //     return byte;
-  //   });
+      if (len < 8) {
+        for (let i = 0; i < 8 - len; i++) {
+          byte = '0' + byte;
+        }
+      }
+      return byte;
+    });
 
   program.forEach((code, i) => cpu.poke(i, parseInt(code, 2)));
 };

@@ -51,7 +51,6 @@ class CPU {
 
     // Special-purpose registers
     this.PC = 0; // Program Counter
-    this.ALU = 0;
 
     // load the function handlers
     this.branchTable = [];
@@ -95,7 +94,12 @@ class CPU {
    * op can be: ADD SUB MUL DIV INC DEC CMP
    */
   alu(op, regA, regB) {
-    // doesn't seem necessary but implementated anyways
+    // switch (op) {
+    //   case MUL:
+    //     // !!! IMPLEMENT ME
+    //     this.reg[regA] *= this.reg[regB];
+    //     break;
+    // }
     this.branchTable[op].call(this, regA, regB);
   }
 
@@ -108,10 +112,13 @@ class CPU {
     // index into memory of the instruction that's about to be executed
     // right now.)
 
+    // !!! IMPLEMENT ME
     const IR = this.ram.read(this.PC);
 
     // Get the two bytes in memory _after_ the PC in case the instruction
     // needs them.
+
+    // !!! IMPLEMENT ME
     const operandA = this.ram.read(this.PC + 1);
     const operandB = this.ram.read(this.PC + 2);
 
@@ -123,6 +130,32 @@ class CPU {
     // Execute the instruction. Perform the actions for the instruction as
     // outlined in the LS-8 spec.
 
+    // !!! IMPLEMENT ME
+    // switch (IR) {
+    //   case LDI:
+    //     this.reg[operandA] = operandB;
+    //     this.branchTable[IR](operandA, operandB);
+    //     //this.PC += 3; // moves the point to the next instructions. commented out, using bitwise
+    //     break;
+    //   case PRN:
+    //     //this.PC += 2; // moves the point to the next instructions. commented out, using bitwise
+    //     console.log(`Execution result is ${this.reg[operandA]}`);
+    //     break;
+    //   case MUL:
+    //     this.reg[operandA] *= this.reg[operandB];
+    //     break;
+    //   case HLT:
+    //     //this.PC = 0; // moves the point to the begining. commented out, using bitwise
+    //     console.log(`execution done!`);
+    //     this.stopClock();
+    //     break;
+    //   default:
+    //     console.log(
+    //       `Instructions Registration error at: ${this.PC}: ${IR.toString(2)}`
+    //     );
+    //     this.stopClock();
+    // }
+
     // do a check before moving on
     if (this.branchTable[IR] === undefined) {
       console.log(
@@ -132,18 +165,14 @@ class CPU {
       return;
     }
 
-    // determine if its ALU OP or not by first right shifting by 5 and then masking
-    if ((IR >> 5) & 0b00000001) {
-      this.alu(IR, operandA, operandB);
-    } else {
-      // move on if defined!
-      this.branchTable[IR].call(this, operandA, operandB);
-    }
-
+    // move on
+    this.branchTable[IR].call(this, operandA, operandB);
     // Increment the PC register to go to the next instruction. Instructions
     // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
     // instruction byte tells you how many bytes follow the instruction byte
     // for any particular instruction.
+
+    // !!! IMPLEMENT ME
     this.PC += (IR >> 6) + 1;
   }
 
@@ -158,7 +187,7 @@ class CPU {
    * Handles the PRN operations
    */
   handle_PRN(operandA) {
-    console.log(this.reg[operandA]);
+    console.log(`Execution result is ${this.reg[operandA]}`);
   }
 
   /**
