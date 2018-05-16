@@ -52,7 +52,7 @@ class CPU {
 
     // Special-purpose registers
     this.PC = 0; // Program Counter
-    this.reg[7] = 0b11110011; // stack pointer
+    this.reg[7] = 0b11110100; // stack pointer
 
     // init variables
     this.ALU = 0; // not an ALU OP
@@ -78,6 +78,13 @@ class CPU {
    */
   poke(address, value) {
     this.ram.write(address, value);
+  }
+
+  /**
+   * read value in memory address
+   */
+  peek(address) {
+    return this.ram.read(address);
   }
 
   /**
@@ -107,7 +114,7 @@ class CPU {
    * op can be: ADD SUB MUL DIV INC DEC CMP
    */
   alu(op, regA, regB) {
-    // doesn't seem necessary but implementated anyways
+    // doesn't seem necessary but implemented anyways
     this.handler = this.branchTable[op];
     this.handler(regA, regB);
   }
@@ -222,21 +229,23 @@ class CPU {
    * Handles the PUSH operations
    */
   handle_PUSH(operandA, operandB) {
-    this.ram[this.reg[7]] = this.reg[operandA];
+    // decrement
     this.reg[7]--;
+
+    // write to ram
+    this.poke(this.reg[7], this.reg[operandA]);
   }
 
   /**
    * Handles the POP operations
    */
   handle_POP(operandA, operandB) {
-    this.reg[7]++;
     // make sure we don't pop anything above 0xf3
     if (this.reg[7] > 0xf3) {
-      this.reg[7]--; // undo the increment
       // don't do anything because the stack is empty
     } else {
-      this.reg[operandA] = this.ram[this.reg[7]];
+      this.reg[operandA] = this.peek(this.reg[7]);
+      this.reg[7]++;
     }
   }
 
