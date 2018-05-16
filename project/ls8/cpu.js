@@ -10,6 +10,8 @@ const LDI = 0b10011001; // 2 operands
 const PRN = 0b01000011; // 1 operand
 const HLT = 0b00000001; // 0 operand
 const MUL = 0b10101010; // 2 operands, ALU OP
+const POP = 0b01001100; // 1 operand
+const PUSH = 0b01001101; // 1 operand
 
 // TBD implemented
 const ADD = 0b10101000; // 2 operands, ALU OP
@@ -17,7 +19,8 @@ const CALL = 0b01001000; // 1 operand
 const CMP = 0b10100000; // 2 operands, ALU OP
 const DEC = 0b01111001; // 1 operand, ALU OP
 const DIV = 0b10101011; // 2 operands, ALU OP
-const INC = 0b01111000; // 2 operands, ALU OP
+const INC = 0b01111000; // 1 operands, ALU OP
+const INT = 0b01001010; // 1 operand,
 const IRET = 0b00001011; // 0 operand
 const JEQ = 0b01010001; // 1 operand
 const JGT = 0b01010100; // 1 operand
@@ -29,8 +32,6 @@ const MOD = 0b10101100; // 2 operands, ALU OP
 const NOP = 0b00000000; // 0 operands
 const NOT = 0b01110000; // 1 operand, ALU OP
 const OR = 0b10110001; // 2 operands, ALU OP
-const POP = 0b01001100; // 1 operand
-const PUSH = 0b01001101; // 1 operand
 const PRA = 0b01000010; // 1 operand
 const RET = 0b00001001; // 0 operand
 const ST = 0b10011010; // 2 operands
@@ -51,7 +52,11 @@ class CPU {
 
     // Special-purpose registers
     this.PC = 0; // Program Counter
-    this.ALU = 0;
+    this.reg[7] = 0b11110011; // stack pointer
+
+    // init variables
+    this.ALU = 0; // not an ALU OP
+    this.handler = undefined; // opcode is not defined yet
 
     // load the function handlers
     this.branchTable = [];
@@ -59,6 +64,8 @@ class CPU {
     this.branchTable[PRN] = this.handle_PRN;
     this.branchTable[HLT] = this.handle_HLT;
     this.branchTable[MUL] = this.handle_MUL;
+    this.branchTable[PUSH] = this.handle_PUSH;
+    this.branchTable[POP] = this.handle_POP;
   }
 
   /**
@@ -96,7 +103,8 @@ class CPU {
    */
   alu(op, regA, regB) {
     // doesn't seem necessary but implementated anyways
-    this.branchTable[op].call(this, regA, regB);
+    this.handler = this.branchTable[op];
+    this.handler(regA, regB);
   }
 
   /**
@@ -116,28 +124,36 @@ class CPU {
     const operandB = this.ram.read(this.PC + 2);
 
     // Debugging output
-    // console.log(`${this.PC}: ${IR.toString(2)}`);
-    // console.log(`opA: ${operandA.toString(2)}`);
-    // console.log(`opB: ${operandB.toString(2)}`);
-    // console.log(`=====>: ${this.reg}`);
+    //console.log(`${this.PC}: ${IR.toString(2)}`);
+    //console.log(`opA: ${operandA.toString(2)}`);
+    //console.log(`opB: ${operandB.toString(2)}`);
+    //console.log('at rams:', this.reg[7], this.ram[this.reg[7] + 1]);
+    // print out the stack
+    // for (let i = 0b11110011; i >= this.reg[7]; i--) {
+    //   console.log(`@ram ${i} is ${this.ram[i]}`);
+    // }
+
+    // console.log(`=====>: ${this.reg} <======`);
+    // console.log('=============================');
     // Execute the instruction. Perform the actions for the instruction as
     // outlined in the LS-8 spec.
 
+    this.handler = this.branchTable[IR];
     // do a check before moving on
-    if (this.branchTable[IR] === undefined) {
+    if (this.handler === undefined) {
       console.log(
         `Instructions Registration error at: ${this.PC}: ${IR.toString(2)}`
       );
       this.stopClock();
       return;
     }
+    // move on if defined!
 
     // determine if its ALU OP or not by first right shifting by 5 and then masking
     if ((IR >> 5) & 0b00000001) {
       this.alu(IR, operandA, operandB);
     } else {
-      // move on if defined!
-      this.branchTable[IR].call(this, operandA, operandB);
+      this.handler(operandA, operandB);
     }
 
     // Increment the PC register to go to the next instruction. Instructions
@@ -174,6 +190,28 @@ class CPU {
    */
   handle_MUL(operandA, operandB) {
     this.reg[operandA] *= this.reg[operandB];
+  }
+
+  /**
+   * Handles the PUSH operations
+   */
+  handle_PUSH(operandA, operandB) {
+    this.ram[this.reg[7]] = this.reg[operandA];
+    this.reg[7]--;
+  }
+
+  /**
+   * Handles the POP operations
+   */
+  handle_POP(operandA, operandB) {
+    this.reg[7]++;
+    // make sure we don't pop anything above 0xf3
+    if (this.reg[7] > 0xf3) {
+      this.reg[7]--; // undo the increment
+      // don't do anything because the stack is empty
+    } else {
+      this.reg[operandA] = this.ram[this.reg[7]];
+    }
   }
 }
 

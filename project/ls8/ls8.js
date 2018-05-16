@@ -4,24 +4,30 @@ const fs = require('fs');
 const RAM = require('./ram');
 const CPU = require('./cpu');
 
-// const filename = path.join(__dirname, './project/ls8/print8.ls8');
+const checkForFile = () => {
+  // remove the first two args, node and this file and just load the file afterwards
+  const argv = process.argv.slice(2);
 
-const argv = process.argv.slice(2);
+  // add an error check to check the number of params, to make sure a user passes in a file
+  if (argv.length !== 1) {
+    console.error('usage: [filename]');
+    process.exit(1);
+  }
 
-// add an error check to check the number of params
-if (argv.length !== 1) {
-  console.error('usage: [filename]');
-  process.exit(1);
-}
+  return argv[0];
+};
 
-const filename = argv[0];
+const loadFile = () => {
+  // check if user passed a file
+  const filename = checkForFile();
 
-// read the file that was passed to our program
+  // read the file that was passed to our program
+  const filedata = fs.readFileSync(filename, 'utf8');
 
-const filedata = fs.readFileSync(filename, 'utf8');
-
-// split the file into lines
-const programLines = filedata.trim().split(/[\r\n]+/g);
+  // split the file into lines
+  const programLines = filedata.trim().split(/[\r\n]+/g);
+  return programLines;
+};
 
 const loadMemory = (cpu, programCode) => {
   // only read the binary part
@@ -45,5 +51,11 @@ const loadMemory = (cpu, programCode) => {
 const ram = new RAM(256);
 const cpu = new CPU(ram);
 
-loadMemory(cpu, programLines);
+// load file program
+const file = loadFile();
+
+// load the cpu with the file code
+loadMemory(cpu, file);
+
+// start the program
 cpu.startClock();
