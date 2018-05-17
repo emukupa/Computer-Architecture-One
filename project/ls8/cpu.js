@@ -6,6 +6,7 @@
  * Constants
  */
 // implemented
+const SP = 7; // Stack Pointer
 const LDI = 0b10011001; // 2 operands
 const PRN = 0b01000011; // 1 operand
 const HLT = 0b00000001; // 0 operand
@@ -20,6 +21,7 @@ const CALL = 0b01001000; // 1 operand
 
 // TBD implemented
 const CMP = 0b10100000; // 2 operands, ALU OP
+const JMP = 0b01010000; // 1 operand
 const DEC = 0b01111001; // 1 operand, ALU OP
 const INC = 0b01111000; // 1 operands, ALU OP
 const INT = 0b01001010; // 1 operand,
@@ -27,7 +29,7 @@ const IRET = 0b00001011; // 0 operand
 const JEQ = 0b01010001; // 1 operand
 const JGT = 0b01010100; // 1 operand
 const JLT = 0b01010011; // 1 operand
-const JMP = 0b01010000; // 1 operand
+
 const JNE = 0b01010010; // 1 operand
 const LD = 0b10011000; // 2 operands
 const MOD = 0b10101100; // 2 operands, ALU OP
@@ -52,7 +54,7 @@ class CPU {
 
     // Special-purpose registers
     this.PC = 0; // Program Counter
-    this.reg[7] = 0b11110100; // stack pointer
+    this.reg[SP] = 0b11110100; // stack pointer
 
     // init variables
     this.ALU = 0; // not an ALU OP
@@ -128,7 +130,7 @@ class CPU {
     // index into memory of the instruction that's about to be executed
     // right now.)
 
-    const IR = this.ram.read(this.PC);
+    const IR = this.peek(this.PC);
 
     // Get the two bytes in memory _after_ the PC in case the instruction
     // needs them.
@@ -136,17 +138,19 @@ class CPU {
     const operandB = this.ram.read(this.PC + 2);
 
     // Debugging output
+    /*
     console.log(`${this.PC}: ${IR.toString(2)}`);
     console.log(`opA: ${operandA.toString(2)}`);
     console.log(`opB: ${operandB.toString(2)}`);
-    console.log('at rams:', this.reg[7], this.peek(this.reg[7]));
+    console.log('at rams:', this.reg[SP], this.peek(this.reg[SP]));
     // // print out the stack
-    for (let i = 0b11110011; i >= this.reg[7]; i--) {
+    for (let i = 0b11110011; i >= this.reg[SP]; i--) {
       console.log(`@ram ${i} is ${this.peek(i)}`);
     }
-
     console.log(`=====>: ${this.reg} <======`);
     console.log('=============================');
+    */
+
     // Execute the instruction. Perform the actions for the instruction as
     // outlined in the LS-8 spec.
 
@@ -172,7 +176,9 @@ class CPU {
     // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
     // instruction byte tells you how many bytes follow the instruction byte
     // for any particular instruction.
-    this.PC += (IR >> 6) + 1;
+    if (IR !== CALL && IR !== RET) {
+      this.PC += (IR >> 6) + 1;
+    }
   }
 
   /**
@@ -228,57 +234,56 @@ class CPU {
   /**
    * push
    */
-  push(operandA, operandB) {
+  push(item) {
     // decrement
-    this.reg[7]--;
+    this.reg[SP]--;
 
     // write to ram
-    this.poke(this.reg[7], this.reg[operandA]);
+    this.poke(this.reg[SP], item);
   }
 
   /**
    * Handles the PUSH operations
    */
-  handle_PUSH(operandA, operandB) {
-    this.push(operandA, operandB);
+  handle_PUSH(operandA) {
+    this.push(this.reg[operandA]);
   }
 
   /**
    * pop method
    */
-  pop(operandA, operandB) {
+  pop() {
     // make sure we don't pop anything above 0xf3
-    if (this.reg[7] > 0xf3) {
+    if (this.reg[SP] > 0xf3) {
       // don't do anything because the stack is empty
 
       return 0;
     } else {
-      const result = this.peek(this.reg[7]);
-      this.reg[7]++;
+      const result = this.peek(this.reg[SP]);
+      this.reg[SP]++;
       return result;
     }
   }
   /**
    * Handles the POP operations
    */
-  handle_POP(operandA, operandB) {
-    this.reg[operandA] = this.pop(operandA, operandA);
+  handle_POP(operandA) {
+    this.reg[operandA] = this.pop();
   }
 
   /**
    * Handles the RET operations
    */
-  handle_RET(operandA, operandB) {
-    this.reg[operandA] = this.pop(operandA, operandA);
+  handle_RET(operandA) {
+    this.PC = this.pop();
   }
 
   /**
    * Handles the CALL operations
    */
   handle_CALL(operandA, operandB) {
-    console.log('+++++++', this.PC, '++++++', this.reg[operandA]);
-    this.push(this.reg[operandA]);
-    this.PC = operandA + 1;
+    this.push(this.PC + 2);
+    this.PC = this.reg[operandA];
   }
 }
 
