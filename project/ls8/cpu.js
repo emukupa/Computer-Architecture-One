@@ -18,10 +18,23 @@ const INT = 0b01001010; // 1 operand,
 const IRET = 0b00001011; // 0 operand
 const IM = 0b00000101; // Interrupt Mask
 const IS = 0b00000110; // Interrupt Status
+const IV_Table = [
+  0b11111000,
+  0b11111001,
+  0b11111010,
+  0b11111011,
+  0b11111100,
+  0b11111101,
+  0b11111110,
+  0b11111111,
+];
+const JMP = 0b01010000; // 1 operand
+const LD = 0b10011000; // 2 operands
 const MOD = 0b10101100; // 2 operands, ALU OP
 const LDI = 0b10011001; // 2 operands
 const MUL = 0b10101010; // 2 operands, ALU OP
 const POP = 0b01001100; // 1 operand
+const PRA = 0b01000010; // 1 operand
 const PRN = 0b01000011; // 1 operand
 const PUSH = 0b01001101; // 1 operand
 const RET = 0b00001001; // 0 operand
@@ -34,13 +47,13 @@ const CMP = 0b10100000; // 2 operands, ALU OP
 const JEQ = 0b01010001; // 1 operand
 const JGT = 0b01010100; // 1 operand
 const JLT = 0b01010011; // 1 operand
-const JMP = 0b01010000; // 1 operand
+
 const JNE = 0b01010010; // 1 operand
-const LD = 0b10011000; // 2 operands
+
 const NOP = 0b00000000; // 0 operands
 const NOT = 0b01110000; // 1 operand, ALU OP
 const OR = 0b10110001; // 2 operands, ALU OP
-const PRA = 0b01000010; // 1 operand
+
 const XOR = 0b10110010; // 2 operands, ALU OP
 
 /**
@@ -76,11 +89,13 @@ class CPU {
     this.branchTable[INC] = this.handle_INC;
     this.branchTable[INT] = this.handle_INT;
     this.branchTable[IRET] = this.handle_IRET;
+    this.branchTable[JMP] = this.handle_JMP;
     this.branchTable[LD] = this.handle_LD;
     this.branchTable[LDI] = this.handle_LDI;
     this.branchTable[MUL] = this.handle_MUL;
     this.branchTable[POP] = this.handle_POP;
     this.branchTable[PRN] = this.handle_PRN;
+    this.branchTable[PRA] = this.handle_PRA;
     this.branchTable[PUSH] = this.handle_PUSH;
     this.branchTable[RET] = this.handle_RET;
     this.branchTable[ST] = this.handle_ST;
@@ -101,6 +116,39 @@ class CPU {
     // doesn't seem necessary but implemented anyways
     this.handler = this.branchTable[op];
     this.handler(regA, regB);
+  }
+
+  /**
+   * Handles the interrupt sequence operations
+   */
+  check_INT(operandA, operandB) {
+    // The IM register is bitwise AND-ed with the IS register
+    const maskedInterrupts = this.reg[IM] & this.reg[IS];
+    ///console.log(maskedInterrupts);
+    for (let i = 1; i <= 8; i++) {
+      // check each Interrupt vector
+      let result = maskedInterrupts & i;
+      if (result) {
+        // disable further interrupts
+        this.Interrupt = false;
+        // clear the IS status
+        this.reg[IS] = 0b00000000;
+
+        // PC is pushed onto the stack
+        this.push(this.PC);
+
+        // FL is pushed onto the stack
+        this.push(this.FL);
+
+        //RO-R6 are push onto the stack
+        for (let r = 0; r <= 6; r++) {
+          this.push(this.reg[r]);
+        }
+
+        // Interrupt vector is lloked up from the interrupt vector
+        this.PC = IV_Table[i - 1];
+      }
+    }
   }
 
   /**
@@ -158,6 +206,14 @@ class CPU {
    * Handles the INT operations
    */
   handle_INT(operandA) {
+    console.log(
+      '++++++',
+      operandA,
+      '=======',
+      this.reg[IS],
+      '+++++++',
+      this.reg[operandA]
+    );
     this.reg[IS] = this.reg[operandA];
   }
 
@@ -178,6 +234,15 @@ class CPU {
 
     this.Interrupt = true;
   }
+
+  /**
+   * Handles the JMP operations
+   */
+  handle_JMP(operandA) {
+    console.log('JUMMMMM', operandA, this.reg[operandA]);
+    this.PC = this.reg[operandA];
+  }
+
   /**
    * Handles the LD operations
    */
@@ -204,6 +269,13 @@ class CPU {
    */
   handle_POP(operandA) {
     this.reg[operandA] = this.pop();
+  }
+
+  /**
+   * Handles the PRA operations
+   */
+  handle_PRA(operandA) {
+    console.log(String.fromCharCode(this.reg[this.operandA]));
   }
 
   /**
@@ -302,6 +374,11 @@ class CPU {
    * Advances the CPU one cycle
    */
   tick() {
+    // this checks the interrupts, only if the
+    if (this.Interrupt) {
+      this.check_INT();
+    }
+
     // Load the instruction register (IR--can just be a local variable here)
     // from the memory address pointed to by the PC. (I.e. the PC holds the
     // index into memory of the instruction that's about to be executed
@@ -353,7 +430,7 @@ class CPU {
     // can be 1, 2, or 3 bytes long. Hint: the high 2 bits of the
     // instruction byte tells you how many bytes follow the instruction byte
     // for any particular instruction.
-    if (IR !== CALL && IR !== RET && IR !== JMP) {
+    if (IR !== CALL && IR !== RET && IR !== JMP && IR !== INT && IR !== IRET) {
       this.PC += (IR >> 6) + 1;
     }
   }
